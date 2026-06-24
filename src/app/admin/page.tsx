@@ -21,9 +21,25 @@ interface Order {
 export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // États pour la sécurité / Login
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
 
-  // Charger les données depuis Turso via notre API
+  // Vérifier si l'admin est déjà connecté (via sessionStorage)
   useEffect(() => {
+    const loggedIn = sessionStorage.getItem("admin_logged_in");
+    if (loggedIn === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // Charger les données depuis Turso uniquement si connecté
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     async function fetchOrders() {
       try {
         const response = await fetch("/api/orders");
@@ -38,7 +54,25 @@ export default function AdminPage() {
       }
     }
     fetchOrders();
-  }, []);
+  }, [isAuthenticated]);
+
+  // Gérer la connexion
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === "Admin" && password === "Admin12") {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("admin_logged_in", "true");
+      setLoginError("");
+    } else {
+      setLoginError("Usuario o contraseña incorrectos.");
+    }
+  };
+
+  // Gérer la déconnexion
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem("admin_logged_in");
+  };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
@@ -58,8 +92,9 @@ export default function AdminPage() {
     }
   };
 
+  // Suppression de la commande (Appelle la méthode DELETE du backend)
   const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm("¿Está seguro de que desea eliminar este pedido del historial?")) return;
+    if (!confirm("¿Está seguro de que desea eliminar este pedido del historial definitivamente?")) return;
 
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
@@ -68,21 +103,56 @@ export default function AdminPage() {
 
       if (response.ok) {
         setOrders(orders.filter((order) => order.id !== orderId));
+      } else {
+        alert("Error del servidor al intentar eliminar el pedido.");
       }
     } catch (error) {
       alert("No se pudo eliminar el pedido.");
     }
   };
 
+  // ÉCRAN DE CONNEXION (Si non authentifié)
+  if (!isAuthenticated) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
+        <form onSubmit={handleLogin} style={{ background: "#fff", padding: "30px", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", width: "100%", maxWidth: "400px" }}>
+          <h2 style={{ marginBottom: "20px", textAlign: "center" }}><i className="fas fa-lock"></i> Acceso Admin</h2>
+          
+          {loginError && <p style={{ color: "red", backgroundColor: "#ffe6e6", padding: "10px", borderRadius: "5px", fontSize: "14px" }}>{loginError}</p>}
+          
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>Usuario</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ccc" }} required />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>Contraseña</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ccc" }} required />
+          </div>
+
+          <button type="submit" style={{ width: "100%", padding: "12px", background: "#0070f3", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}>
+            Iniciar Sesión
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   if (loading) {
     return <div className="admin-container"><p>Cargando pedidos desde Turso...</p></div>;
   }
 
+  // ÉCRAN PRINCIPAL (Si connecté)
   return (
     <div className="admin-container">
-      <div className="admin-header">
-        <h1 className="admin-title"><i className="fas fa-user-shield"></i> Panel de Control - Administración</h1>
-        <span className="admin-badge">{orders.length} Pedido(s) recibido(s)</span>
+      <div className="admin-header" style={{ display: "flex", justifyContent: "between", alignItems: "center" }}>
+        <div>
+          <h1 className="admin-title"><i className="fas fa-user-shield"></i> Panel de Control - Administración</h1>
+          <span className="admin-badge">{orders.length} Pedido(s) recibido(s)</span>
+        </div>
+        <button onClick={handleLogout} style={{ padding: "8px 16px", background: "#333", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+          Cerrar Sesión
+        </button>
       </div>
 
       {orders.length === 0 ? (

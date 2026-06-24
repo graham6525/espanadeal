@@ -6,9 +6,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  // Le "as any" force TypeScript à accepter 'clearCart' même s'il manque dans ton interface de type locale
   const { cart, clearCart, updateQuantity, removeFromCart } = useCart() as any;
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // Premier popup : Succès
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // Deuxième popup : Paiement
   const [currentOrderRef, setCurrentOrderRef] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -30,7 +30,6 @@ export default function CartPage() {
     };
 
     try {
-      // Envoi direct vers la base de données Turso via notre API
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -38,7 +37,8 @@ export default function CartPage() {
       });
 
       if (response.ok) {
-        setShowPaymentModal(true);
+        // Étape 1 : On affiche d'abord le popup de succès
+        setShowSuccessPopup(true);
       } else {
         alert("Hubo un error al procesar el pedido en el servidor.");
       }
@@ -50,15 +50,21 @@ export default function CartPage() {
     }
   };
 
+  // Passer du popup de succès au modal de paiement
+  const handleProceedToPayment = () => {
+    setShowSuccessPopup(false);
+    setShowPaymentModal(true);
+  };
+
   const handleCloseModal = () => {
     setShowPaymentModal(false);
     if (typeof clearCart === "function") {
       clearCart();
     }
-    router.push("/panier");
+    router.push("/");
   };
 
-  if (cart.length === 0 && !showPaymentModal) {
+  if (cart.length === 0 && !showPaymentModal && !showSuccessPopup) {
     return (
       <div className="cart-empty-container">
         <i className="fas fa-shopping-bag empty-icon"></i>
@@ -111,13 +117,37 @@ export default function CartPage() {
         </div>
       </div>
 
+      {/* 1. POPUP DE SUCCÈS (PREMIER PLAN DIRECT) */}
+      {showSuccessPopup && (
+        <div className="payment-modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="payment-modal-card" style={{ textAlign: "center", padding: "40px 30px" }}>
+            <div style={{ fontSize: "50px", color: "#2ecc71", marginBottom: "20px" }}>
+              <i className="fas fa-check-circle animate-bounce"></i>
+            </div>
+            <h2 style={{ fontSize: "24px", color: "#2c3e50", marginBottom: "10px" }}>¡Pedido Enviado con Éxito!</h2>
+            <p style={{ color: "#7f8c8d", marginBottom: "25px", fontSize: "16px" }}>
+              Su pedido <strong>#{currentOrderRef}</strong> ha sido registrado en nuestro sistema correctamente.
+            </p>
+            <button 
+              onClick={handleProceedToPayment}
+              className="btn-modal-confirm"
+              style={{ background: "#2ecc71", border: "none", width: "100%" }}
+              type="button"
+            >
+              Ver instrucciones de pago <i className="fas fa-arrow-right" style={{ marginLeft: "8px" }}></i>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. MODAL DE INSTRUCTIONS DE PAIEMENT */}
       {showPaymentModal && (
-        <div className="payment-modal-overlay">
+        <div className="payment-modal-overlay" style={{ zIndex: 9998 }}>
           <div className="payment-modal-card">
             <div className="payment-modal-header">
               <i className="fas fa-university payment-header-icon"></i>
               <h2>Instrucciones de Pago</h2>
-              <p>Su pedido ha sido registrado con éxito. Siga los pasos a continuación para realizar el pago.</p>
+              <p>Siga los pasos a continuación para realizar el pago de su pedido por transferencia.</p>
             </div>
             <div className="payment-modal-details">
               <strong className="payment-method-title">Pago por transferencia bancaria</strong>
@@ -128,7 +158,7 @@ export default function CartPage() {
             </div>
             <div className="payment-modal-notice">
               <i className="fas fa-info-circle"></i> 
-              Después de realizar le pago, debe enviar el recibo por correo electrónico a <strong>support@deal-espana.com</strong>.
+              Después de realizar el pago, debe enviar el recibo por correo electrónico a <strong>support@deal-espana.com</strong>.
             </div>
             <button onClick={handleCloseModal} className="btn-modal-confirm" type="button">Entendido y Confirmar</button>
           </div>
@@ -136,4 +166,4 @@ export default function CartPage() {
       )}
     </div>
   );
-}   
+}
