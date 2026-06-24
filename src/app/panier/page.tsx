@@ -55,7 +55,7 @@ export default function CartPage() {
     if (typeof clearCart === "function") {
       clearCart();
     }
-    router.push("/");
+    router.push("/panier");
   };
 
   if (cart.length === 0 && !showPaymentModal) {
@@ -121,9 +121,9 @@ export default function CartPage() {
             </div>
             <div className="payment-modal-details">
               <strong className="payment-method-title">Pago por transferencia bancaria</strong>
-              <p><strong>Beneficiario:</strong> Jean Dupont</p>
-              <p><strong>IBAN:</strong> FR76 XXXX XXXX XXXX XXXX XXXX XXX</p>
-              <p><strong>BIC:</strong> XXXXXXXX</p>
+              <p><strong>Beneficiario:</strong> ZACARIA BAGGAR</p>
+              <p><strong>IBAN:</strong> ES4667071000610187475242</p>
+              <p><strong>SWIFT/BIC:</strong> PCRDESMMXXX</p>
               <p className="payment-reference-row"><strong>Referencia:</strong> Pedido #{currentOrderRef}</p>
             </div>
             <div className="payment-modal-notice">
