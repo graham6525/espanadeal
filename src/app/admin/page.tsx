@@ -21,6 +21,8 @@ interface Order {
 export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bank, setBank] = useState({ beneficiary: "", iban: "", bic: "" });
+const [savingBank, setSavingBank] = useState(false);
   
   // États pour la sécurité / Login
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,7 +38,7 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Charger les données depuis Turso uniquement si connecté
+  // Charger les données 
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -111,6 +113,33 @@ export default function AdminPage() {
     }
   };
 
+  // Charger les données bancaires au démarrage si authentifié
+useEffect(() => {
+  if (!isAuthenticated) return;
+  fetch("/api/bank-details")
+    .then((res) => res.json())
+    .then((data) => setBank(data))
+    .catch(console.error);
+}, [isAuthenticated]);
+
+const handleBankUpdate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setSavingBank(true);
+  try {
+    const res = await fetch("/api/bank-details", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bank),
+    });
+    if (res.ok) alert("Datos bancarios actualizados correctamente.");
+  } catch (error) {
+    alert("Error al actualizar.");
+  } finally {
+    setSavingBank(false);
+  }
+};
+
+
   // ÉCRAN DE CONNEXION (Si non authentifié)
   if (!isAuthenticated) {
     return (
@@ -154,6 +183,28 @@ export default function AdminPage() {
           Cerrar Sesión
         </button>
       </div>
+
+
+      <div style={{ background: "#fff", padding: "20px", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: "30px" }}>
+  <h3><i className="fas fa-university"></i> Configuración de Cuenta Bancaria</h3>
+  <form onSubmit={handleBankUpdate} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "15px", alignItems: "end", marginTop: "15px" }}>
+    <div>
+      <label style={{ display: "block", fontSize: "14px", marginBottom: "5px" }}>Beneficiario</label>
+      <input type="text" value={bank.beneficiary} onChange={(e) => setBank({ ...bank, beneficiary: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} required />
+    </div>
+    <div>
+      <label style={{ display: "block", fontSize: "14px", marginBottom: "5px" }}>IBAN</label>
+      <input type="text" value={bank.iban} onChange={(e) => setBank({ ...bank, iban: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} required />
+    </div>
+    <div>
+      <label style={{ display: "block", fontSize: "14px", marginBottom: "5px" }}>SWIFT / BIC</label>
+      <input type="text" value={bank.bic} onChange={(e) => setBank({ ...bank, bic: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} required />
+    </div>
+    <button type="submit" disabled={savingBank} style={{ padding: "10px 20px", background: "#2ecc71", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" }}>
+      {savingBank ? "Guardando..." : "Actualizar Cuenta"}
+    </button>
+  </form>
+</div>
 
       {orders.length === 0 ? (
         <div className="admin-empty-state">

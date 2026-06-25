@@ -2,7 +2,7 @@
 
 import { useCart } from "@/context/CartContext";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CartPage() {
@@ -74,6 +74,16 @@ export default function CartPage() {
       </div>
     );
   }
+  const [bankInfo, setBankInfo] = useState({ beneficiary: "Cargando...", iban: "Cargando...", bic: "Cargando..." });
+
+useEffect(() => {
+  fetch("/api/bank-details")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.beneficiary) setBankInfo(data);
+    })
+    .catch(console.error);
+}, []);
 
   return (
     <div className="cart-page-container">
@@ -150,12 +160,12 @@ export default function CartPage() {
               <p>Siga los pasos a continuación para realizar el pago de su pedido por transferencia.</p>
             </div>
             <div className="payment-modal-details">
-              <strong className="payment-method-title">Pago por transferencia bancaria</strong>
-              <p><strong>Beneficiario:</strong> ZACARIA BAGGAR</p>
-              <p><strong>IBAN:</strong> ES4667071000610187475242</p>
-              <p><strong>SWIFT/BIC:</strong> PCRDESMMXXX</p>
-              <p className="payment-reference-row"><strong>Referencia:</strong> Pedido #{currentOrderRef}</p>
-            </div>
+  <strong className="payment-method-title">Pago por transferencia bancaria</strong>
+  <p><strong>Beneficiario:</strong> {bankInfo.beneficiary}</p>
+  <p><strong>IBAN:</strong> {bankInfo.iban}</p>
+  <p><strong>SWIFT/BIC:</strong> {bankInfo.bic}</p>
+  <p className="payment-reference-row"><strong>Referencia:</strong> Pedido #{currentOrderRef}</p>
+</div>
             <div className="payment-modal-notice">
               <i className="fas fa-info-circle"></i> 
               Después de realizar el pago, debe enviar el recibo por correo electrónico a <strong>support@deal-espana.com</strong>.

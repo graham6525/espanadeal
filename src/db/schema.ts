@@ -21,3 +21,11 @@ export const orderItems = sqliteTable("order_items", {
   category: text("category").notNull(),
   image: text("image").notNull(),
 });
+
+
+export const bankDetails = sqliteTable("bank_details", {
+  id: integer("id").primaryKey(), // Un identifiant unique (valeur fixe 1)
+  beneficiary: text("beneficiary").notNull(),
+  iban: text("iban").notNull(),
+  bic: text("bic").notNull(),
+});
